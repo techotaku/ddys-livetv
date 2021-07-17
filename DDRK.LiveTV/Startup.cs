@@ -21,7 +21,9 @@ namespace DDRK.LiveTV
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddHttpClient<HttpService>().ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            services
+                .AddSingleton<PlaylistService>()
+                .AddHttpClient<HttpService>().ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli
             });
@@ -36,6 +38,9 @@ namespace DDRK.LiveTV
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
 
             app.UseRouting();
 

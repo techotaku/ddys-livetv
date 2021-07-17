@@ -56,6 +56,11 @@ namespace DDRK.LiveTV
             return HttpUtility.UrlEncode(str);
         }
 
+        public static string UrlDecode(this string str)
+        {
+            return HttpUtility.UrlDecode(str);
+        }
+
         public static byte[] Inflate(this byte[] input)
         {
             var data = input;

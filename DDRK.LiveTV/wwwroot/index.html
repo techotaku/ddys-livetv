@@ -1,0 +1,152 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>DDRK Live TV</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC">
+    <style type="text/css">
+        body {
+            color: #0dcaf0;
+            background-color: #2a2a2a;
+        }
+        .ddys-center {
+            top: 50%;
+            position: absolute;
+            width: 80%;
+        }
+        .ddys-top {
+            top: 25%;
+            position: absolute;
+            width: 80%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row ddys-center" id="ddysBox">
+            <div class="col-lg-3 col-sm-1">&nbsp;</div>
+            <div class="col">
+                <div class="row" id="ddysSearch">
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td align="left"><input type="text" class="form-control" id="ddysUrl" placeholder="输入https://开头的完整地址"></td>
+                                <td align="right"><button type="button" class="btn btn-warning" style="width: 100%;" id="ddysFetchTitle">Go !</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div> 
+                <div class="row" id="ddysVideos">
+                    <table>
+                        <thead>
+                            <tr>
+                                <td colspan="2">
+                                    <h3 id="ddysCaption"></h3>
+                                </td>
+                            </tr>
+                        </thead>
+                        <tbody id="ddysContent">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-lg-3 col-sm-1">&nbsp;</div>
+        </div>
+    </div>
+    <script src="/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"></script>
+    <script>
+        document.getElementById('ddysFetchTitle').addEventListener('click', () => {
+            document.getElementById('ddysFetchTitle').disabled = true;
+            document.getElementById('ddysUrl').disabled = true;
+
+            var url = document.getElementById('ddysUrl').value;
+            if (!url.startsWith('https://ddrk.me/')) {
+                alert('请输入正确的地址！');
+                document.getElementById('ddysFetchTitle').disabled = false;
+                document.getElementById('ddysUrl').disabled = false;
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('url', url);
+            fetch('/api/title/fetch', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('请求解析媒体信息时出错！');
+                })
+                .then(response => {
+                    document.getElementById('ddysCaption').innerText = response.caption;
+                    var content = document.getElementById('ddysContent');
+                    if (response.tracks !== undefined && Array.isArray(response.tracks)) {
+                        content.innerHTML = '';
+                        response.tracks.forEach(track => {
+                            var tr = document.createElement("tr");
+                            tr.innerHTML = '<td align="left"><b>' + track.caption + '</b></td><td align="right"><button class="btn btn-warning" onclick="media(\'' + track.video + '\')">媒体</button>&nbsp;&nbsp;&nbsp;<button class="btn btn-warning" onclick="subtitle(\'' + track.subtitle + '\')">字幕</button></td>';
+                            content.appendChild(tr);
+                        });
+                    }
+                    document.getElementById('ddysSearch').classList.add('invisible');
+                    document.getElementById('ddysBox').classList.remove('ddys-center');
+                    document.getElementById('ddysBox').classList.add('ddys-top');
+                    document.getElementById('ddysVideos').classList.remove('invisible');
+                })
+                .catch(error => alert(error));                
+        });
+
+        function media(target) {
+            var formData = new FormData();
+            formData.append('target', target);
+            fetch('/api/video/media', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    }
+                    throw new Error('请求生成媒体文件时出错！');
+                })
+                .then(response => {
+                    if (response === '') {
+                        alert('播放列表文件未成功生成，请确保服务器时间正确！');
+                    } else {
+                        if (response.endsWith('.strm')) {
+                            alert('播放列表文件已经生成！\r\n文件名：' + response + '\r\nSTRM 播放列表文件存在时效性，生成后请尽早观看（无需本服务运行）。');
+                        } else {
+                            alert('播放列表文件已经生成！\r\n文件名：' + response + '\r\nM3U8 播放列表文件长期有效，生成后可在任意时间观看（需本服务在运行）。');
+                        }
+                    }
+                })
+                .catch(error => alert(error));
+        }
+
+        function subtitle(target) {
+            var formData = new FormData();
+            formData.append('target', target);
+            fetch('/api/video/subtitle', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    }
+                    throw new Error('请求生成字幕文件时出错！');
+                })
+                .then(response => {
+                    if (response === '') {
+                        alert('字幕文件未生成，可能该媒体没有外挂软字幕！');
+                    } else {
+                        alert('字幕文件已经生成！\r\n文件名：' + response + '\r\nWEBVTT 字幕文件长期有效，播放媒体时选择该字幕文件即可（无需本服务运行）。');
+                    }
+                })
+                .catch(error => alert(error));
+        }
+    </script>
+</body>
+</html>
